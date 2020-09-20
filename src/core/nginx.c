@@ -206,7 +206,10 @@ main(int argc, char *const *argv)
     if (ngx_strerror_init() != NGX_OK) {
         return 1;
     }
-    /* 命令行参数解析 */
+    /* 命令行参数解析
+        1. nginx -v等命令，设置ngx_show_version全局变量
+        2. 如果是nginx -c xx.conf指定配置文件，则存储配置文件
+     */
     if (ngx_get_options(argc, argv) != NGX_OK) {
         return 1;
     }
@@ -220,6 +223,7 @@ main(int argc, char *const *argv)
     }
 
     /* TODO */ ngx_max_sockets = -1;
+    
     /* 时间初始化 */
     ngx_time_init();
 
@@ -279,7 +283,9 @@ main(int argc, char *const *argv)
      */
 
     ngx_slab_sizes_init();
-
+    /* 初始化socket端口监听，例如打开80端口监听；
+     * Nginx支持热切换，为了保证切换之后的套接字不丢失，
+     * 所以需要采用这一步添加继承的Socket套接字，套接字会放在NGINX的全局环境变量中*/
     if (ngx_add_inherited_sockets(&init_cycle) != NGX_OK) {
         return 1;
     }
@@ -288,6 +294,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+    /* nginx核心初始化 */
     cycle = ngx_init_cycle(&init_cycle);
     if (cycle == NULL) {
         if (ngx_test_config) {
