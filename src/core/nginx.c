@@ -206,7 +206,7 @@ main(int argc, char *const *argv)
     if (ngx_strerror_init() != NGX_OK) {
         return 1;
     }
-
+    /* 命令行参数解析 */
     if (ngx_get_options(argc, argv) != NGX_OK) {
         return 1;
     }
@@ -220,7 +220,7 @@ main(int argc, char *const *argv)
     }
 
     /* TODO */ ngx_max_sockets = -1;
-
+    /* 时间初始化 */
     ngx_time_init();
 
 #if (NGX_PCRE)
@@ -229,14 +229,14 @@ main(int argc, char *const *argv)
 
     ngx_pid = ngx_getpid();
     ngx_parent = ngx_getppid();
-
+    /* 日志初始化 */
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
     }
 
     /* STUB */
-#if (NGX_OPENSSL)
+#if (NGX_OPENSSL)   /* ssl初始化 */
     ngx_ssl_init(log);
 #endif
 
