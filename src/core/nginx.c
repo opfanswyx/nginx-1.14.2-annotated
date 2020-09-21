@@ -233,6 +233,7 @@ main(int argc, char *const *argv)
 
     ngx_pid = ngx_getpid();
     ngx_parent = ngx_getppid();
+    
     /* 日志初始化 */
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
