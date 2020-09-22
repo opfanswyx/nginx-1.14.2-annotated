@@ -3,38 +3,39 @@
 # Copyright (C) Igor Sysoev
 # Copyright (C) Nginx, Inc.
 
-
 LC_ALL=C
 export LC_ALL
 
-#该脚本定义后续工作需要用到的变量
+#options脚本定义后续工作需要用到的变量
 #根据本次调用configure时携带的参数与默认值设置这些变量
 . auto/options
-#该脚本初始化后续工作需要的一些文件路径
+#init脚本初始化后续工作需要的一些文件路径
 . auto/init
-#该脚本将代码.c/.h文件分类，并定义为对应的变量
+#sources分析nginx源码结构,该脚本将.c/.h代码文件分类，并定义为对应的变量数组
 . auto/sources
 
+# 测试并创建$NGX_OBJS目录,该目录用来存储编译过程中所有目标文件的路径
 test -d $NGX_OBJS || mkdir -p $NGX_OBJS
 
+# 以下两个变量定义在auto/init脚本里,分别是ngx_auto_headers.h,autoconf.err文件
 echo > $NGX_AUTO_HEADERS_H
 echo > $NGX_AUTOCONF_ERR
-
+# 向ngx_auto_headers.h文件写入命令行参数
 echo "#define NGX_CONFIGURE \"$NGX_CONFIGURE\"" > $NGX_AUTO_CONFIG_H
 
-
+# 关于DEBUG宏
 if [ $NGX_DEBUG = YES ]; then
     have=NGX_DEBUG . auto/have
 fi
 
-
+# checking for os
 if test -z "$NGX_PLATFORM"; then
     echo "checking for OS"
 
     NGX_SYSTEM=`uname -s 2>/dev/null`
     NGX_RELEASE=`uname -r 2>/dev/null`
     NGX_MACHINE=`uname -m 2>/dev/null`
-
+    # 输出操作系统相关信息
     echo " + $NGX_SYSTEM $NGX_RELEASE $NGX_MACHINE"
 
     NGX_PLATFORM="$NGX_SYSTEM:$NGX_RELEASE:$NGX_MACHINE";
@@ -57,7 +58,8 @@ fi
 if [ "$NGX_PLATFORM" != win32 ]; then
     . auto/headers
 fi
-
+# 对于当前的操作系统,设置操作系统特定的一些方法并检查是否支持。
+# 例如linux特有的sendfile系统调用来加速向网络中发送文件块。
 . auto/os/conf
 
 # unix/linux操作系统相关的头文件与系统调用设置
@@ -65,12 +67,16 @@ if [ "$NGX_PLATFORM" != win32 ]; then
     . auto/unix
 fi
 
+# 线程相关的支持设置
 . auto/threads
+##########################
 # 最核心的构造部分
+# 生成ngx_modules.c文件
+# 定义了ngx_modules数组
+##########################
 . auto/modules
 # 在链接时需要的第三方静态，动态库或者目标文件是否存在
 . auto/lib/conf
-
 
 # nginx安装后的路径
 case ".$NGX_PREFIX" in
