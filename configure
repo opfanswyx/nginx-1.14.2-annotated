@@ -7,8 +7,12 @@
 LC_ALL=C
 export LC_ALL
 
+#该脚本定义后续工作需要用到的变量
+#根据本次调用configure时携带的参数与默认值设置这些变量
 . auto/options
+#该脚本初始化后续工作需要的一些文件路径
 . auto/init
+#该脚本将代码.c/.h文件分类，并定义为对应的变量
 . auto/sources
 
 test -d $NGX_OBJS || mkdir -p $NGX_OBJS
@@ -46,22 +50,29 @@ else
     NGX_SYSTEM=$NGX_PLATFORM
 fi
 
+# 检查并设置编译器
 . auto/cc/conf
 
+# 非win操作系统定义一些头文件
 if [ "$NGX_PLATFORM" != win32 ]; then
     . auto/headers
 fi
 
 . auto/os/conf
 
+# unix/linux操作系统相关的头文件与系统调用设置
 if [ "$NGX_PLATFORM" != win32 ]; then
     . auto/unix
 fi
 
 . auto/threads
+# 最核心的构造部分
 . auto/modules
+# 在链接时需要的第三方静态，动态库或者目标文件是否存在
 . auto/lib/conf
 
+
+# nginx安装后的路径
 case ".$NGX_PREFIX" in
     .)
         NGX_PREFIX=${NGX_PREFIX:-/usr/local/nginx}
@@ -77,10 +88,12 @@ case ".$NGX_PREFIX" in
     ;;
 esac
 
+# nginx安装后conf文件的路径
 if [ ".$NGX_CONF_PREFIX" != "." ]; then
     have=NGX_CONF_PREFIX value="\"$NGX_CONF_PREFIX/\"" . auto/define
 fi
 
+# nginx安装后，其它一些文件路径参数设置
 have=NGX_SBIN_PATH value="\"$NGX_SBIN_PATH\"" . auto/define
 have=NGX_CONF_PATH value="\"$NGX_CONF_PATH\"" . auto/define
 have=NGX_PID_PATH value="\"$NGX_PID_PATH\"" . auto/define
@@ -99,13 +112,21 @@ have=NGX_HTTP_UWSGI_TEMP_PATH value="\"$NGX_HTTP_UWSGI_TEMP_PATH\""
 have=NGX_HTTP_SCGI_TEMP_PATH value="\"$NGX_HTTP_SCGI_TEMP_PATH\""
 . auto/define
 
+# 创建编译时使用的objs/Makefile文件
 . auto/make
+# 为objs/Makefile加入需要连接的第三方静态库，动态库或者目标文件
 . auto/lib/make
+# 为objs/Makefile加入install功能，当执行make
+# install时将编译生成的必要文件复制到安装路径，建立必要的目录
 . auto/install
 
 # STUB
+# 在ngx_auto_config.h文件中加入NGX_SUPPRESS_WARN宏，NGX_SMP宏
 . auto/stubs
 
+# 在ngx_auto_config.h文件中指定NGX_USER和NGX_GROUP宏，
+# 如果执行configure时没有参数指定，
+# 默认两者皆为nobody(也就是默认以nobody用户运行进程)
 have=NGX_USER value="\"$NGX_USER\"" . auto/define
 have=NGX_GROUP value="\"$NGX_GROUP\"" . auto/define
 
@@ -113,4 +134,5 @@ if [ ".$NGX_BUILD" != "." ]; then
     have=NGX_BUILD value="\"$NGX_BUILD\"" . auto/define
 fi
 
+# 显示configure执行的结果，如果失败，则给出失败原因
 . auto/summary
