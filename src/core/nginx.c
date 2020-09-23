@@ -214,7 +214,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    if (ngx_show_version) {
+    if (ngx_show_version) {     /* 再参数解析时，设置该全局变量 */
         ngx_show_version_info();
 
         if (!ngx_test_config) {
@@ -224,7 +224,7 @@ main(int argc, char *const *argv)
 
     /* TODO */ ngx_max_sockets = -1;
     
-    /* 时间初始化 */
+    /* 时间相关初始化 */
     ngx_time_init();
 
 #if (NGX_PCRE)
@@ -233,8 +233,10 @@ main(int argc, char *const *argv)
 
     ngx_pid = ngx_getpid();
     ngx_parent = ngx_getppid();
-    
-    /* 日志初始化 */
+
+    /* 临时日志初始化
+     * 在mian函数结尾处，在ngx_master_process_cycle函数调用之前，
+     * 会close掉这个日志件 */
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
@@ -258,15 +260,16 @@ main(int argc, char *const *argv)
     if (init_cycle.pool == NULL) {
         return 1;
     }
-
+    /* 保存命名行参数到全局变量 */
     if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
         return 1;
     }
-
+    /* 保存prefix，conf_prefix等变量信息到cycle结构 */
     if (ngx_process_options(&init_cycle) != NGX_OK) {
         return 1;
     }
-
+    /* 初始化系统相关变量，如内存页面大小ngx_pagesize,
+     * ngx_cacheline_size,最大连接数ngx_max_sockets等 */
     if (ngx_os_init(log) != NGX_OK) {
         return 1;
     }
@@ -282,8 +285,9 @@ main(int argc, char *const *argv)
     /*
      * ngx_slab_sizes_init() requires ngx_pagesize set in ngx_os_init()
      */
-
+    /* slab内存分配算法相关初始化 */
     ngx_slab_sizes_init();
+
     /* 初始化socket端口监听，例如打开80端口监听；
      * Nginx支持热切换，为了保证切换之后的套接字不丢失，
      * 所以需要采用这一步添加继承的Socket套接字，套接字会放在NGINX的全局环境变量中*/
@@ -332,7 +336,7 @@ main(int argc, char *const *argv)
         return 0;
     }
 
-    if (ngx_signal) {
+    if (ngx_signal) {   /* 处理-s参数相关 */
         return ngx_signal_process(cycle, ngx_signal);
     }
 
@@ -745,55 +749,64 @@ ngx_exec_new_binary(ngx_cycle_t *cycle, char *const *argv)
     return pid;
 }
 
-
+/* nginx 命令行参数解析，命令格式为：
+ * nginx -c file */
 static ngx_int_t
 ngx_get_options(int argc, char *const *argv)
 {
     u_char     *p;
     ngx_int_t   i;
 
-    for (i = 1; i < argc; i++) {
+    for (i = 1; i < argc; i++) {    /* argv[0]是程序名 */
 
         p = (u_char *) argv[i];
 
-        if (*p++ != '-') {
+        if (*p++ != '-') {      /* *p++中++运算符优先级高于*，但++后置 */
             ngx_log_stderr(0, "invalid option: \"%s\"", argv[i]);
             return NGX_ERROR;
         }
 
-        while (*p) {
+        while (*p) { /* -c参数后的c */
 
-            switch (*p++) {
+            switch (*p++) { /* 该操作后，*p执行空格 */
 
-            case '?':
+            case '?':       /* 显示帮助有关的信息 */
             case 'h':
                 ngx_show_version = 1;
                 ngx_show_help = 1;
                 break;
 
-            case 'v':
+            case 'v':       /* 显示nginx版本信息 */
                 ngx_show_version = 1;
                 break;
 
+            /* 显示nginx编译时添加的自定义配置参数信息 */
+            /* nginx version: nginx/1.14.2
+             * built by gcc 7.4.0 (Ubuntu 7.4.0-1ubuntu1~18.04.1) 
+             * built with OpenSSL 1.1.1  11 Sep 2018
+             * TLS SNI support enabled
+             * configure arguments: --prefix=/usr/local/nginx --with-http_ssl_module */
             case 'V':
                 ngx_show_version = 1;
                 ngx_show_configure = 1;
                 break;
 
-            case 't':
+            case 't':       /* 测试nginx.conf配置文件是否存在语法错误 */
                 ngx_test_config = 1;
                 break;
 
+            /* 与t参数类似，检查配置文件错误，如果正确，
+             * 将配置文件信息输出到屏幕，可重定向到文件。*/
             case 'T':
                 ngx_test_config = 1;
                 ngx_dump_config = 1;
                 break;
-
+            /* 在配置测试期间禁止非错误信息？ */
             case 'q':
                 ngx_quiet_mode = 1;
                 break;
 
-            case 'p':
+            case 'p':       /* 设置nginx路径前缀 */
                 if (*p) {
                     ngx_prefix = p;
                     goto next;
@@ -807,7 +820,7 @@ ngx_get_options(int argc, char *const *argv)
                 ngx_log_stderr(0, "option \"-p\" requires directory name");
                 return NGX_ERROR;
 
-            case 'c':
+            case 'c':       /* 指定nginx配置文件而非默认配置文件  */
                 if (*p) {
                     ngx_conf_file = p;
                     goto next;
@@ -820,7 +833,8 @@ ngx_get_options(int argc, char *const *argv)
 
                 ngx_log_stderr(0, "option \"-c\" requires file name");
                 return NGX_ERROR;
-
+            /* 设置全局配置指令，例如：
+             * nginx -g "pid /var/run/nginx.pid; worker_process sysctl -n xxx;"*/
             case 'g':
                 if (*p) {
                     ngx_conf_params = p;
@@ -834,7 +848,7 @@ ngx_get_options(int argc, char *const *argv)
 
                 ngx_log_stderr(0, "option \"-g\" requires parameter");
                 return NGX_ERROR;
-
+            /* 向主进程发送信号 */
             case 's':
                 if (*p) {
                     ngx_signal = (char *) p;
@@ -847,10 +861,10 @@ ngx_get_options(int argc, char *const *argv)
                     return NGX_ERROR;
                 }
 
-                if (ngx_strcmp(ngx_signal, "stop") == 0
-                    || ngx_strcmp(ngx_signal, "quit") == 0
-                    || ngx_strcmp(ngx_signal, "reopen") == 0
-                    || ngx_strcmp(ngx_signal, "reload") == 0)
+                if (ngx_strcmp(ngx_signal, "stop") == 0      /* 快速强制关闭 */
+                    || ngx_strcmp(ngx_signal, "quit") == 0   /* 正常关闭 */
+                    || ngx_strcmp(ngx_signal, "reopen") == 0 /* 重新打开日志文件 */
+                    || ngx_strcmp(ngx_signal, "reload") == 0)/* 重新加载配置 */
                 {
                     ngx_process = NGX_PROCESS_SIGNALLER;
                     goto next;

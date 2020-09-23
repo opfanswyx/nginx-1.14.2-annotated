@@ -20,6 +20,11 @@
 
 #define NGX_HAVE_ATOMIC_OPS  1
 
+/*
+ * Most operations operate on values of type AO_T, which are unsigned integers
+ * whose size matches that of pointers on the given architecture.
+ * ios/mac os平台api
+ */
 typedef long                        ngx_atomic_int_t;
 typedef AO_t                        ngx_atomic_uint_t;
 typedef volatile ngx_atomic_uint_t  ngx_atomic_t;

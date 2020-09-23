@@ -25,7 +25,7 @@ static ngx_msec_t ngx_monotonic_time(time_t sec, ngx_uint_t msec);
 
 static ngx_uint_t        slot;
 static ngx_atomic_t      ngx_time_lock;
-
+/* volatile关键字表明该指令不会被编译器优化 */
 volatile ngx_msec_t      ngx_current_msec;
 volatile ngx_time_t     *ngx_cached_time;
 volatile ngx_str_t       ngx_cached_err_log_time;
@@ -71,7 +71,7 @@ ngx_time_init(void)
     ngx_cached_http_log_iso8601.len = sizeof("1970-09-28T12:00:00+06:00") - 1;
     ngx_cached_syslog_time.len = sizeof("Sep 28 12:00:00") - 1;
 
-    ngx_cached_time = &cached_time[0];
+    ngx_cached_time = &cached_time[0];      /* 时间结构数组 */
 
     ngx_time_update();
 }
