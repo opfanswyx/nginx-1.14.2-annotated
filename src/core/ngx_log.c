@@ -313,7 +313,7 @@ ngx_log_errno(u_char *buf, u_char *last, ngx_err_t err)
     return buf;
 }
 
-
+/* 日志初始化 */
 ngx_log_t *
 ngx_log_init(u_char *prefix)
 {

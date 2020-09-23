@@ -295,6 +295,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+    /* 处理configure生成的ngx_modules模块 */
     if (ngx_preinit_modules() != NGX_OK) {
         return 1;
     }
@@ -336,7 +337,7 @@ main(int argc, char *const *argv)
         return 0;
     }
 
-    if (ngx_signal) {   /* 处理-s参数相关 */
+    if (ngx_signal) {   /* 处理-s参数相关的业务 */
         return ngx_signal_process(cycle, ngx_signal);
     }
 
@@ -369,7 +370,7 @@ main(int argc, char *const *argv)
     }
 
 #endif
-
+    /* 创建pid文件 */
     if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) {
         return 1;
     }
@@ -390,7 +391,7 @@ main(int argc, char *const *argv)
     if (ngx_process == NGX_PROCESS_SINGLE) {
         ngx_single_process_cycle(cycle);
 
-    } else {
+    } else {    /* 多进程模式 */
         ngx_master_process_cycle(cycle);
     }
 
