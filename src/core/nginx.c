@@ -250,7 +250,8 @@ main(int argc, char *const *argv)
     /*
      * init_cycle->log is required for signal handlers and
      * ngx_process_options()
-     */
+     * init_cycle局部变量
+     * */
 
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
@@ -378,7 +379,7 @@ main(int argc, char *const *argv)
     if (ngx_log_redirect_stderr(cycle) != NGX_OK) {
         return 1;
     }
-
+    /* 关闭之前ngx_log_init(ngx_prefix)的日志 */
     if (log->file->fd != ngx_stderr) {
         if (ngx_close_file(log->file->fd) == NGX_FILE_ERROR) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
@@ -557,12 +558,7 @@ ngx_set_environment(ngx_cycle_t *cycle, ngx_uint_t *last)
 
 tz_found:
 
-    n = 0;
-
-    for (i = 0; i < ccf->env.nelts; i++) {
-
-        if (var[i].data[var[i].len] == '=') {
-            n++;
+    n = 0
             continue;
         }
 
