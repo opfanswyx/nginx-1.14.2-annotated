@@ -63,7 +63,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     ngx_time_update();
 
-
+    /* 在解析配置文件的error_log前,使用这个旧的默认log */
     log = old_cycle->log;
 
     pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);
@@ -266,10 +266,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     log->log_level = NGX_LOG_DEBUG_ALL;
 #endif
 
-    if (ngx_conf_param(&conf) != NGX_CONF_OK) {
-        environ = senv;
-        ngx_destroy_cycle_pools(&conf);
-        return NULL;
+    if (ngx_conf_ senv;
+        ngx_destroy_cycle_pools(&conf);LL;
     }
 
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
