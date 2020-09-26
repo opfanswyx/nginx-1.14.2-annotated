@@ -85,12 +85,19 @@ struct ngx_command_s {
     ngx_str_t             name;     /* 配置项名称 */
     /* 配置项类型,type将指定配置项可以出现的位置。例如,出现在server{ }或
      * location{ }中,以及它可以携带的参数个数。
+     * type可以同时取多个值，各值之间用|符号连接，例如，type可以取值为
+     * NGX_TTP_MAIN_CONF | NGX_HTTP_SRV_CONFI | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE。
      * */
     ngx_uint_t            type;
     /* 出现了name中指定的配置项后,讲调用set方法处理配置项的参数 */
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+    /* crate分配内存的时候的偏移量 NGX_HTTP_LOC_CONF_OFFSET NGX_HTTP_SRV_CONF_OFFSET */
     ngx_uint_t            conf;
+    /*  通常用于使用预设的解析方法解析配置项，这是配置模块的一个优秀设计。
+     *  它需要与conf配合使用
+     *  */
     ngx_uint_t            offset;
+    /* 如果使用Nginx预设的配置项解析方法，就需要根据这些预设方法来决定post的使用方式。 */
     void                 *post;
 };
 
