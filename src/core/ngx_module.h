@@ -220,21 +220,43 @@
 
 
 struct ngx_module_s {
+    /* 模块有多种类别,由下边type字段决定当前类别,
+     * 每种类别又有多个成员,ctx_index表示当前模块在这类模块中的序号。
+     * ctx_index变量通常由管理这类模块的核心模块设置 */
     ngx_uint_t            ctx_index;
+    /* index表示当前模块在ngx_modules数组中的序号。
+     * nginx启动时会根据ngx_modules数组设置各模块的index值: 
+     * ngx_max_module = 0;
+     * for (i = 0; ngx_modules[i]; i++) {
+     *      ngx_modules[i]->index = ngx_max_module++;
+     * }
+     * */
     ngx_uint_t            index;
 
     char                 *name;
-
+    /* spare系列(不清楚)保留变量,暂未使用 */
     ngx_uint_t            spare0;
     ngx_uint_t            spare1;
-
+    /* 模块的版本,便于将来扩展,目前只有一种,默认值为1 */
     ngx_uint_t            version;
     const char           *signature;
-
+    /* ctx用于指向一类模块的上下文结构体，为什么需要ctx呢？
+     * 因为前面说过，Nginx模块有许多种类，不同类模块之间的功能差别很大。
+     * 例如，事件类型的模块主要处理I/O事件相关的功能，HTTP类型的模块主要处理HTTP应用层的功能。
+     * 这样，每个模块都有了自己的特性，而ctx将会指向特定类型模块的公共接口。
+     * 例如，在HTTP模块中，ctx需要指向ngx_http_module_t结构体,
+     * 可以参考例如ngx_http_core_module,event模块中，指向ngx_event_module_t
+     * */
     void                 *ctx;
+    /* commands将处理nginx.conf中的配置项 */
     ngx_command_t        *commands;
+    /* type表示该模块的类型，它与ctx指针是紧密相关的。在官方Nginx中，它的取值范围是以下5种：
+     * NGX_HTTP_MODULE、NGX_CORE_MODULE、NGX_CONF_MODULE、NGX_EVENT_MODULE、NGX_MAIL_MODULE。
+     * */
     ngx_uint_t            type;
-
+    /* 在Nginx的启动、停止过程中，以下7个函数指针表示有7个执行点会分别调用这7种方法。
+     * 对于任一个方法而言，如果不需要Nginx在某个时刻执行它，那么简单地把它设为NULL空指针即可
+     * */
     ngx_int_t           (*init_master)(ngx_log_t *log);
 
     ngx_int_t           (*init_module)(ngx_cycle_t *cycle);
@@ -245,7 +267,9 @@ struct ngx_module_s {
     void                (*exit_process)(ngx_cycle_t *cycle);
 
     void                (*exit_master)(ngx_cycle_t *cycle);
-
+    /* 以下8个spare_hook变量也是保留字段，目前没有使用，但可用Nginx提供的NGX_MODULE_V1_PADDING宏来填充。
+     * 看一下该宏的定义：#define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
+     * */
     uintptr_t             spare_hook0;
     uintptr_t             spare_hook1;
     uintptr_t             spare_hook2;

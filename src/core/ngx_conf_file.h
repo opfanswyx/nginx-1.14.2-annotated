@@ -73,10 +73,21 @@
 
 #define NGX_MAX_CONF_ERRSTR  1024
 
-
+/* commands数组用于定义模块的配置文件参数，每一个数组元素都是ngx_command_t类型，数组的结尾用ngx_null_command表示。
+ * Nginx在解析配置文件中的一个配置项时首先会遍历所有的模块，对于每一个模块而言，
+ * 即通过遍历commands数组进行，另外，在数组中检查到ngx_null_command时，会停止使用当前模块解析该配置项。
+ * 每一个ngx_command_t结构体定义了自己感兴趣的一个配置项：
+ * typedef struct ngx_command_s     ngx_command_t;
+ * 每个module都有自己的command，见ngx_modules中对应模块的command。
+ * 每个进程中都有一个唯一的ngx_cycle_t核心结构体，它有一个成员conf_ctx维护着所有模块的配置结构体
+ * */
 struct ngx_command_s {
-    ngx_str_t             name;
+    ngx_str_t             name;     /* 配置项名称 */
+    /* 配置项类型,type将指定配置项可以出现的位置。例如,出现在server{ }或
+     * location{ }中,以及它可以携带的参数个数。
+     * */
     ngx_uint_t            type;
+    /* 出现了name中指定的配置项后,讲调用set方法处理配置项的参数 */
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
     ngx_uint_t            conf;
     ngx_uint_t            offset;
