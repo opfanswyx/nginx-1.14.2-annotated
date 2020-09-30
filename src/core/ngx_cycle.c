@@ -212,7 +212,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
     ngx_strlow(cycle->hostname.data, (u_char *) hostname, cycle->hostname.len);
 
-
+    /* 把全局的ngx_modlue数组赋予cycle这个结构体 */
     if (ngx_cycle_modules(cycle) != NGX_OK) {
         ngx_destroy_pool(pool);
         return NULL;
@@ -220,14 +220,14 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
 
     for (i = 0; cycle->modules[i]; i++) {
-        if (cycle->modules[i]->type != NGX_CORE_MODULE) {
+        if (cycle->modules[i]->type != NGX_CORE_MODULE) {/* 只处理ngx_core_module模块 */
             continue;
         }
 
         module = cycle->modules[i]->ctx;
 
         if (module->create_conf) {
-            rv = module->create_conf(cycle);
+            rv = module->create_conf(cycle);    /* 为配置信息分配内存空间 */
             if (rv == NULL) {
                 ngx_destroy_pool(pool);
                 return NULL;
@@ -269,7 +269,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     if (ngx_conf_ senv;
         ngx_destroy_cycle_pools(&conf);LL;
     }
-
+    /* 解析配置文件 */
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
@@ -281,6 +281,8 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
                        cycle->conf_file.data);
     }
 
+    /* 如果配置文件没有对一些字段进行设置，
+     * 这个函数会进行最后的初始化工作 */
     for (i = 0; cycle->modules[i]; i++) {
         if (cycle->modules[i]->type != NGX_CORE_MODULE) {
             continue;

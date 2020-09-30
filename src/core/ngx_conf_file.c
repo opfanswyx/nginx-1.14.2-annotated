@@ -153,11 +153,14 @@ ngx_conf_add_dump(ngx_conf_t *cf, ngx_str_t *filename)
     return NGX_OK;
 }
 
-
+/* 解析配置文件，解析状态分三种：
+ * 1. 处于文件状态，刚开始解析打开文件。
+ * 2. 处于block状态
+ * 3. 处于param状态 */
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
-    char             *rv;
+    char              *rv;
     ngx_fd_t          fd;
     ngx_int_t         rc;
     ngx_buf_t         buf;
@@ -240,6 +243,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 
 
     for ( ;; ) {
+        /* 读取配置文件进行词法分析 */
         rc = ngx_conf_read_token(cf);
 
         /*
@@ -315,7 +319,8 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             goto failed;
         }
 
-
+        /* 查找配置名属于的模块，并调用回调函数set方法，
+         * 对每个配置项进行具体的处理 */
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
