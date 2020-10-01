@@ -265,8 +265,9 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 #if 0
     log->log_level = NGX_LOG_DEBUG_ALL;
 #endif
-
-    if (ngx_conf_ senv;
+    /* 解析nginx -g参数加入的配置信息 */
+    if (ngx_conf_param(&conf) != NGX_CONF_OK) { 
+        environ = senv;
         ngx_destroy_cycle_pools(&conf);LL;
     }
     /* 解析配置文件 */

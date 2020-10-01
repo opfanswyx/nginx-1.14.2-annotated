@@ -58,7 +58,8 @@ static ngx_uint_t argument_number[] = {
     NGX_CONF_TAKE7
 };
 
-
+/* ngx_conf_param负责解析nginx -g命令行参数加入的配置信息
+ * 该函数还是调用ngx_conf_parase实现 */
 char *
 ngx_conf_param(ngx_conf_t *cf)
 {
@@ -153,10 +154,14 @@ ngx_conf_add_dump(ngx_conf_t *cf, ngx_str_t *filename)
     return NGX_OK;
 }
 
-/* 解析配置文件，解析状态分三种：
- * 1. 处于文件状态，刚开始解析打开文件。
- * 2. 处于block状态
- * 3. 处于param状态 */
+/* 解析配置文件,解析过程大致分为三步:1.设置当前解析状态
+ * 2.读取配置文件进行词法分析获取token 3.
+ * 读取适当token之后对其进行实际处理,转换为nginx内对应的变量
+ *
+ * ngx_conf_parse存在三种解析状态:
+ * 1. 刚开始进行配置文件解析的parse_file状态
+ * 2. 开始解析一个配置块的parse_block状态
+ * 3. 对应ngx_conf_parm解析命令行参数的配置信息时的parse_param状态 */
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
@@ -197,17 +202,17 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
                           ngx_fd_info_n " \"%s\" failed", filename->data);
         }
-
+        /* buffer缓冲区用于后续配置文件解析时读取到内存中的配置信息存储区域 */
         cf->conf_file->buffer = &buf;
 
         buf.start = ngx_alloc(NGX_CONF_BUFFER, cf->log);
         if (buf.start == NULL) {
             goto failed;
         }
-
-        buf.pos = buf.start;
-        buf.last = buf.start;
-        buf.end = buf.last + NGX_CONF_BUFFER;
+        /* pos缓冲区已扫描的位置 */
+        buf.pos = buf.start;    /* 缓冲区开始位置 */
+        buf.last = buf.start;   /* 读取缓冲区的结束位置,可能读不满整个缓冲区 */
+        buf.end = buf.last + NGX_CONF_BUFFER;   /* 缓冲区最大大小的结束位置 */
         buf.temporary = 1;
 
         cf->conf_file->file.fd = fd;
@@ -243,7 +248,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 
 
     for ( ;; ) {
-        /* 读取配置文件进行词法分析 */
+        /* 读取配置文件,逐个字符扫描,进行词法分析,解析单个token */
         rc = ngx_conf_read_token(cf);
 
         /*
@@ -503,7 +508,10 @@ invalid:
     return NGX_ERROR;
 }
 
-
+/* 扫描配置文件解析token,该函数并不会频繁的读取配置文件,
+ * 它每次从文件内读取足够多的内容以填满一个NGX_CONF_BUFFER大小的缓冲区,
+ * 该缓冲区在ngx_conf_parse内申请并保持引用到变量cf->conf_file->buffer内,
+ * 该函数反复使用该缓冲区 */
 static ngx_int_t
 ngx_conf_read_token(ngx_conf_t *cf)
 {
@@ -535,9 +543,9 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
     for ( ;; ) {
 
-        if (b->pos >= b->last) {
+        if (b->pos >= b->last) {    /* 缓冲区所有字符已扫描 */
 
-            if (cf->conf_file->file.offset >= file_size) {
+            if (cf->conf_file->file.offset >= file_size) {  /* 解析错误 */
 
                 if (cf->args->nelts > 0 || !last_space) {
 
