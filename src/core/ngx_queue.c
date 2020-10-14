@@ -13,7 +13,7 @@
  * find the middle queue element if the queue has odd number of elements
  * or the first element of the queue's second part otherwise
  */
-
+/* 返回链表中心元素 */
 ngx_queue_t *
 ngx_queue_middle(ngx_queue_t *queue)
 {
@@ -45,7 +45,7 @@ ngx_queue_middle(ngx_queue_t *queue)
 }
 
 
-/* the stable insertion sort */
+/* the stable insertion sort，插入排序 */
 
 void
 ngx_queue_sort(ngx_queue_t *queue,
